@@ -1,0 +1,93 @@
+---
+import { SITE } from '../config';
+
+const path = Astro.url.pathname;
+const isPosts = path === '/' || path.startsWith('/posts');
+const isAbout = path.startsWith('/about');
+const isSearch = path.startsWith('/search');
+---
+
+<header class="header container">
+  <a href="/" class="name">{SITE.name}</a>
+  <nav aria-label="주요 메뉴">
+    <a href="/" aria-current={isPosts ? 'page' : undefined}>글</a>
+    <a href="/about" aria-current={isAbout ? 'page' : undefined}>소개</a>
+    <a href="/search" class="icon" aria-label="검색" aria-current={isSearch ? 'page' : undefined}>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+    </a>
+    <button type="button" class="icon" id="theme-toggle" aria-label="다크 모드 전환">
+      <svg class="moon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"></path></svg>
+      <svg class="sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+    </button>
+  </nav>
+</header>
+
+<script>
+  const btn = document.getElementById('theme-toggle');
+  btn?.addEventListener('click', () => {
+    const root = document.documentElement;
+    const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    root.dataset.theme = next;
+    localStorage.setItem('theme', next);
+    window.dispatchEvent(new CustomEvent('themechange', { detail: next }));
+  });
+</script>
+
+<style>
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 40px;
+    padding-bottom: 64px;
+  }
+  .name {
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: -0.02em;
+  }
+  nav {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    font-size: 14.5px;
+    color: var(--fg-secondary);
+  }
+  nav a,
+  nav button {
+    transition: color 0.15s;
+  }
+  nav a:hover,
+  nav button:hover,
+  nav a[aria-current='page'] {
+    color: var(--fg);
+  }
+  .icon {
+    display: inline-flex;
+    align-items: center;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+  }
+  .sun {
+    display: none;
+  }
+  :global([data-theme='dark']) .sun {
+    display: block;
+  }
+  :global([data-theme='dark']) .moon {
+    display: none;
+  }
+  @media (max-width: 480px) {
+    .header {
+      padding-top: 28px;
+      padding-bottom: 48px;
+    }
+    nav {
+      gap: 18px;
+    }
+  }
+</style>

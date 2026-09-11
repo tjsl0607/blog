@@ -1,0 +1,59 @@
+---
+import { GISCUS } from '../config';
+const enabled = Boolean(GISCUS.repo && GISCUS.repoId && GISCUS.categoryId);
+---
+
+{enabled && (
+  <section class="comments" aria-label="댓글">
+    <div
+      id="giscus-root"
+      data-repo={GISCUS.repo}
+      data-repo-id={GISCUS.repoId}
+      data-category={GISCUS.category}
+      data-category-id={GISCUS.categoryId}
+    ></div>
+  </section>
+)}
+
+<script>
+  const root = document.getElementById('giscus-root');
+  const themeOf = () =>
+    document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+
+  if (root) {
+    const s = document.createElement('script');
+    s.src = 'https://giscus.app/client.js';
+    s.async = true;
+    s.crossOrigin = 'anonymous';
+    const attrs: Record<string, string> = {
+      'data-repo': root.dataset.repo!,
+      'data-repo-id': root.dataset.repoId!,
+      'data-category': root.dataset.category!,
+      'data-category-id': root.dataset.categoryId!,
+      'data-mapping': 'pathname',
+      'data-strict': '1',
+      'data-reactions-enabled': '1',
+      'data-emit-metadata': '0',
+      'data-input-position': 'top',
+      'data-lang': 'ko',
+      'data-loading': 'lazy',
+      'data-theme': themeOf(),
+    };
+    Object.entries(attrs).forEach(([k, v]) => s.setAttribute(k, v));
+    root.appendChild(s);
+
+    window.addEventListener('themechange', () => {
+      const frame = document.querySelector<HTMLIFrameElement>('iframe.giscus-frame');
+      frame?.contentWindow?.postMessage(
+        { giscus: { setConfig: { theme: themeOf() } } },
+        'https://giscus.app',
+      );
+    });
+  }
+</script>
+
+<style>
+  .comments {
+    margin-top: 56px;
+  }
+</style>

@@ -1,0 +1,134 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="검색">
+  <h1 class="sr-only">검색</h1>
+  <div class="field">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+    <input id="q" type="search" placeholder="찾고 싶은 내용을 입력하세요" autocomplete="off" aria-label="검색어" autofocus />
+  </div>
+  <p id="status" class="status" aria-live="polite"></p>
+  <ul id="results" class="results"></ul>
+</Base>
+
+<!-- Pagefind 인덱스는 빌드 결과물에만 존재하므로 번들러를 거치지 않는 인라인 모듈로 불러와요 -->
+<script is:inline type="module">
+  const input = document.getElementById('q');
+  const status = document.getElementById('status');
+  const list = document.getElementById('results');
+
+  let pagefind = null;
+  try {
+    pagefind = await import('/pagefind/pagefind.js');
+    await pagefind.init();
+  } catch {
+    status.textContent = '검색 인덱스는 빌드할 때 만들어져요. npm run build 후 npm run preview로 확인해 주세요.';
+  }
+
+  const escape = (s) =>
+    s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+  const run = async () => {
+    if (!pagefind) return;
+    const q = input.value.trim();
+    const params = new URLSearchParams(location.search);
+    q ? params.set('q', q) : params.delete('q');
+    history.replaceState(null, '', params.size ? `?${params}` : location.pathname);
+
+    if (!q) {
+      list.innerHTML = '';
+      status.textContent = '';
+      return;
+    }
+    const search = await pagefind.debouncedSearch(q);
+    if (!search) return;
+    const items = await Promise.all(search.results.slice(0, 20).map((r) => r.data()));
+    status.textContent = items.length
+      ? `${items.length}개의 글`
+      : `‘${q}’에 대한 결과가 없어요. 다른 단어로 찾아보세요.`;
+    list.innerHTML = items
+      .map(
+        (it) =>
+          `<li><a href="${it.url}"><span class="rt">${escape(it.meta.title ?? '')}</span><span class="rx">${it.excerpt}</span></a></li>`,
+      )
+      .join('');
+  };
+
+  input.addEventListener('input', run);
+  const initial = new URLSearchParams(location.search).get('q');
+  if (initial) {
+    input.value = initial;
+    run();
+  }
+</script>
+
+<style>
+  .field {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border-strong);
+    color: var(--fg-muted);
+    transition: border-color 0.15s;
+  }
+  .field:focus-within {
+    border-color: var(--fg);
+    color: var(--fg);
+  }
+  input {
+    flex: 1;
+    border: 0;
+    outline: none;
+    background: none;
+    font: inherit;
+    font-size: 18px;
+    color: var(--fg);
+    letter-spacing: -0.015em;
+  }
+  input::placeholder {
+    color: var(--fg-muted);
+  }
+  input::-webkit-search-cancel-button {
+    display: none;
+  }
+  .status {
+    font-size: 13.5px;
+    color: var(--fg-muted);
+    margin: 16px 0 8px;
+    min-height: 1.5em;
+  }
+  .results {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .results :global(li a) {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .results :global(.rt) {
+    font-size: 16px;
+    font-weight: 500;
+  }
+  .results :global(.rx) {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--fg-secondary);
+  }
+  .results :global(mark) {
+    background: var(--mark);
+    color: inherit;
+    border-radius: 2px;
+    padding: 0 1px;
+  }
+  .results :global(li a:hover .rt) {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    text-decoration-color: var(--fg-muted);
+  }
+</style>

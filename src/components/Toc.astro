@@ -1,0 +1,81 @@
+---
+import type { MarkdownHeading } from 'astro';
+
+interface Props {
+  headings: MarkdownHeading[];
+}
+
+const items = Astro.props.headings.filter((h) => h.depth === 2 || h.depth === 3);
+---
+
+{items.length > 1 && (
+  <nav class="toc" aria-label="목차">
+    <p>목차</p>
+    <ol>
+      {items.map((h) => (
+        <li class:list={[`d${h.depth}`]}>
+          <a href={`#${h.slug}`} data-slug={h.slug}>{h.text}</a>
+        </li>
+      ))}
+    </ol>
+  </nav>
+)}
+
+<script>
+  const links = [...document.querySelectorAll<HTMLAnchorElement>('.toc a')];
+  const targets = links
+    .map((a) => document.getElementById(a.dataset.slug!))
+    .filter((el): el is HTMLElement => !!el);
+
+  if (targets.length) {
+    const setActive = () => {
+      let current = targets[0];
+      for (const t of targets) {
+        if (t.getBoundingClientRect().top < 120) current = t;
+      }
+      links.forEach((a) => a.classList.toggle('active', a.dataset.slug === current.id));
+    };
+    document.addEventListener('scroll', setActive, { passive: true });
+    setActive();
+  }
+</script>
+
+<style>
+  .toc {
+    position: sticky;
+    top: 48px;
+    font-size: 13px;
+    line-height: 1.6;
+    max-height: calc(100vh - 96px);
+    overflow-y: auto;
+  }
+  p {
+    margin: 0 0 10px;
+    color: var(--fg);
+    font-weight: 500;
+  }
+  ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-left: 1px solid var(--border);
+  }
+  li a {
+    display: block;
+    padding: 4px 0 4px 14px;
+    margin-left: -1px;
+    border-left: 1px solid transparent;
+    color: var(--fg-muted);
+    transition: color 0.15s, border-color 0.15s;
+  }
+  li.d3 a {
+    padding-left: 26px;
+  }
+  li a:hover {
+    color: var(--fg-secondary);
+  }
+  li a.active {
+    color: var(--fg);
+    border-left-color: var(--fg);
+  }
+</style>
